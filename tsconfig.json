@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@mariozechner/pi-coding-agent": ["/nix/store/3nqr1yg188ddnzmpzzk86fipfsl202bp-pi-coding-agent-0.63.1/lib/node_modules/@mariozechner/pi-coding-agent"],
+      "@mariozechner/pi-ai": ["/nix/store/3nqr1yg188ddnzmpzzk86fipfsl202bp-pi-coding-agent-0.63.1/lib/node_modules/@mariozechner/pi-coding-agent/node_modules/@mariozechner/pi-ai"],
+      "@mariozechner/pi-tui": ["/nix/store/3nqr1yg188ddnzmpzzk86fipfsl202bp-pi-coding-agent-0.63.1/lib/node_modules/@mariozechner/pi-coding-agent/node_modules/@mariozechner/pi-tui"],
+      "@sinclair/typebox": ["/nix/store/3nqr1yg188ddnzmpzzk86fipfsl202bp-pi-coding-agent-0.63.1/lib/node_modules/@mariozechner/pi-coding-agent/node_modules/@sinclair/typebox"]
+    },
+    "typeRoots": [
+      "/nix/store/3nqr1yg188ddnzmpzzk86fipfsl202bp-pi-coding-agent-0.63.1/lib/node_modules/@mariozechner/pi-coding-agent/node_modules/@types"
+    ]
+  },
+  "include": ["**/*.ts"]
+}

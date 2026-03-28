@@ -1,0 +1,23 @@
+{
+  "name": "pi-auditor",
+  "version": "0.1.0",
+  "description": "Pi coding agent extension for auditing tool calls with a rule engine",
+  "scripts": {
+    "test": "vitest --run",
+    "test:coverage": "vitest --run --coverage"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@marcbachmann/cel-js": "^7.6.0",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.2",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
