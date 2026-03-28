@@ -4,7 +4,7 @@
  * Intercepts tool calls for rule-based evaluation and policy enforcement.
  */
 
-import type { ExtensionAPI, ToolCallEventResult } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, ToolCallEventResult } from "@mariozechner/pi-coding-agent";
 import type { ToolCall, AuditAction, Handler } from "./types.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -19,7 +19,7 @@ async function executeAction(
   action: AuditAction,
   toolCall: ToolCall,
   handler: Handler,
-  ctx: { ui: any; hasUI: boolean },
+  ctx: ExtensionContext,
 ): Promise<ToolCallEventResult | undefined> {
   switch (action.type) {
     case "accept":
