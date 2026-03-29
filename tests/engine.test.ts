@@ -62,7 +62,7 @@ describe("Auditor.evaluate", () => {
         enrich(toolCall: ToolCall) {
           toolCall.attributes.ext = (toolCall.input.path as string).split(".").pop();
         },
-        summarize(toolCall: ToolCall) { return `read: ${toolCall.input.path}`; },
+        async verify() { return { accepted: false }; },
       });
       auditor.setRules("global", [
         { when: 'attributes.ext == "ts"', action: { type: "accept" } },

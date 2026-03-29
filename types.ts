@@ -1,3 +1,8 @@
+import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+
+/** Rule scopes in order of specificity. */
+export type RuleScope = "session" | "project" | "global";
+
 /** Represents a tool call intercepted by the auditor. */
 export interface ToolCall {
   toolName: string;
@@ -43,15 +48,27 @@ export interface Rule {
   action: AuditAction;
 }
 
+/** The result of a handler's verification flow. */
+export interface VerifyResult {
+  /** Whether the user accepted or rejected. */
+  accepted: boolean;
+  /** Optional new rule to register after verification. */
+  newRule?: {
+    rule: Rule;
+    scope: RuleScope;
+  };
+}
+
 /**
  * A handler for a specific tool (or class of tools).
  *
  * The handler enriches the tool call by populating its attributes dict,
  * then the engine evaluates rules via CEL against the enriched struct.
+ * When verification is needed, the handler owns the full UI flow.
  */
 export interface Handler {
   /** Populate toolCall.attributes with derived data. */
   enrich(toolCall: ToolCall): void;
-  /** Generate a human-readable summary for verify prompts. */
-  summarize(toolCall: ToolCall): string;
+  /** Conduct verification with the user. Called when a verify action is triggered. */
+  verify(toolCall: ToolCall, ctx: ExtensionContext): Promise<VerifyResult>;
 }

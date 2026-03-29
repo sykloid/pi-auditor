@@ -5,20 +5,20 @@
  */
 
 import type { ExtensionAPI, ExtensionContext, ToolCallEventResult } from "@mariozechner/pi-coding-agent";
-import type { ToolCall, AuditAction, Handler } from "./types.js";
+import type { ToolCall, AuditAction } from "./types.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { Auditor } from "./engine.js";
 import { loadRules } from "./config.js";
-import { readHandler } from "./handlers/read.js";
-import { writeHandler } from "./handlers/write.js";
-import { editHandler } from "./handlers/edit.js";
+import { pathHandler } from "./handlers/path.js";
+
+const REJECTION_MESSAGE = "User explicitly rejected this tool call. Do not attempt the same operation via a different tool or workaround. Report the intended change to the user instead.";
 
 /** Executes an audit action, returning a tool_call event result if the call should be blocked. */
 async function executeAction(
   action: AuditAction,
   toolCall: ToolCall,
-  handler: Handler,
+  auditor: Auditor,
   ctx: ExtensionContext,
 ): Promise<ToolCallEventResult | undefined> {
   switch (action.type) {
@@ -31,12 +31,15 @@ async function executeAction(
         return { block: true, reason: "Blocked: no UI available for verification." };
       }
 
-      // TODO: implement full verify UI
-      const title = action.reason || `Verify: ${toolCall.toolName}`;
-      const message = handler.summarize(toolCall);
-      const approved = await ctx.ui.confirm(title, message);
-      if (!approved) {
-        return { block: true, reason: "User explicitly rejected this tool call. Do not attempt the same operation via a different tool or workaround. Report the intended change to the user instead." };
+      const handler = auditor.getHandler(toolCall.toolName);
+      const result = await handler.verify(toolCall, ctx);
+
+      if (result.newRule) {
+        auditor.addRule(result.newRule.scope, result.newRule.rule);
+      }
+
+      if (!result.accepted) {
+        return { block: true, reason: REJECTION_MESSAGE };
       }
       return undefined;
     }
@@ -47,9 +50,9 @@ export default function (pi: ExtensionAPI) {
   const auditor = new Auditor();
 
   // Register built-in handlers
-  auditor.registerHandler("read", readHandler);
-  auditor.registerHandler("write", writeHandler);
-  auditor.registerHandler("edit", editHandler);
+  auditor.registerHandler("read", pathHandler("read"));
+  auditor.registerHandler("write", pathHandler("write"));
+  auditor.registerHandler("edit", pathHandler("edit"));
 
   pi.on("session_start", async (_event, ctx) => {
     auditor.setRules("global", loadRules(join(homedir(), ".pi", "auditor", "rules.yml")));
@@ -67,7 +70,6 @@ export default function (pi: ExtensionAPI) {
     };
 
     const action = auditor.evaluate(toolCall);
-    const handler = auditor.getHandler(toolCall.toolName);
-    return executeAction(action, toolCall, handler, ctx);
+    return executeAction(action, toolCall, auditor, ctx);
   });
 }
