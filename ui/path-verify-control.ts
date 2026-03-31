@@ -23,7 +23,6 @@ export interface PathVerifyControlTheme {
   fieldActive: (text: string) => string;
   fieldInactive: (text: string) => string;
   hint: (text: string) => string;
-  label: (text: string) => string;
 }
 
 export interface PathVerifyControlOptions {
@@ -49,10 +48,15 @@ export interface PathVerifyResult {
 // Sentence composition
 // ---------------------------------------------------------------------------
 
+interface SentenceSegment {
+  text: string;
+  /** If set, this segment is a field that can be edited. */
+  field?: number;
+}
+
 interface ActionOption {
   label: string;
   value: string;
-  /** Plural verb form for broader scopes, e.g. "Accept" → "Accept". Tool is pluralized instead. */
 }
 
 const RULE_ACTIONS: ActionOption[] = [
@@ -75,7 +79,7 @@ function composeSentence(
   toolName: string,
   pathOpt: PathVerifyOption,
   scopeOpt: ScopeOption,
-): { segments: SentenceSegment[] } {
+): SentenceSegment[] {
   const plural = toolName + "s";
   const segments: SentenceSegment[] = [];
 
@@ -100,13 +104,7 @@ function composeSentence(
   segments.push({ text: " " });
   segments.push({ text: scopeOpt.label, field: 2 });
 
-  return { segments };
-}
-
-interface SentenceSegment {
-  text: string;
-  /** If set, this segment is a field that can be edited. */
-  field?: number;
+  return segments;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +299,7 @@ export class PathVerifyControl implements Component {
     const pathOpt = this.pathOptions[this.rulePathIndex]!;
     const scopeOpt = this.scopeOptions[this.ruleScopeIndex]!;
 
-    const { segments } = composeSentence(action, this.toolName, pathOpt, scopeOpt);
+    const segments = composeSentence(action, this.toolName, pathOpt, scopeOpt);
 
     const parts = [prefixStyle(`  ${prefix}`)];
     for (const seg of segments) {

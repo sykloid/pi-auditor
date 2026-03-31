@@ -2,8 +2,7 @@ import { evaluate } from "@marcbachmann/cel-js";
 import type { ToolCall, AuditAction, Handler, Rule, RuleScope } from "./types.js";
 import { defaultHandler } from "./handlers/default.js";
 
-
-const SCOPE_ORDER: RuleScope[] = ["session", "project", "global"];
+const SCOPE_ORDER: readonly RuleScope[] = ["session", "project", "global"];
 
 /**
  * Evaluate a CEL expression against a ToolCall.

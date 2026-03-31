@@ -53,6 +53,11 @@ function toVerifyResult(result: PathVerifyResult, toolName: string): VerifyResul
 
   assert(result.type === "rule", `unexpected verify result type: ${result.type}`);
   const r = result.rule!;
+  assert(
+    r.scope === "session" || r.scope === "project" || r.scope === "global",
+    `unexpected rule scope: ${r.scope}`,
+  );
+  const scope: RuleScope = r.scope;
   const accepted = r.action === "accept";
 
   // Build CEL expression
@@ -82,7 +87,7 @@ function toVerifyResult(result: PathVerifyResult, toolName: string): VerifyResul
         when,
         action: accepted ? { type: "accept" } : { type: "reject", reason: "Rejected by user rule." },
       },
-      scope: r.scope as RuleScope,
+      scope,
     },
   };
 }
@@ -121,7 +126,6 @@ export function pathHandler(toolName: string): Handler {
             fieldActive: (t) => theme.fg("accent", theme.bold(t)),
             fieldInactive: (t) => theme.fg("dim", t),
             hint: (t) => theme.fg("dim", t),
-            label: (t) => theme.fg("text", t),
           };
 
           const control = new PathVerifyControl(
