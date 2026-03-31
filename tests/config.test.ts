@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { parseRules, loadRules } from "../config.js";
+import { parseRules, loadRules, appendRule } from "../config.js";
 
 describe("parseRules", () => {
   it("parses a complete rule", () => {
@@ -132,5 +132,50 @@ rules:
   it("throws on invalid YAML (not ENOENT)", () => {
     writeFileSync(tmpFile, ":\n  :\n  - :\n  invalid: [");
     expect(() => loadRules(tmpFile)).toThrow();
+  });
+});
+
+describe("appendRule", () => {
+  const tmpDir = join(import.meta.dirname, ".tmp-test-append");
+  const tmpFile = join(tmpDir, "rules.yml");
+
+  beforeEach(() => {
+    mkdirSync(tmpDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("creates file and directories if they don't exist", () => {
+    const nested = join(tmpDir, "a", "b", "rules.yml");
+    appendRule(nested, { name: "new-rule", when: 'toolName == "bash"', action: { type: "accept" } });
+    const rules = loadRules(nested);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.name).toBe("new-rule");
+  });
+
+  it("appends to existing rules without clobbering", () => {
+    writeFileSync(tmpFile, `rules:\n  - name: existing\n    action: accept\n`);
+    appendRule(tmpFile, { name: "appended", action: { type: "reject", reason: "no" } });
+    const rules = loadRules(tmpFile);
+    expect(rules).toHaveLength(2);
+    expect(rules[0]!.name).toBe("existing");
+    expect(rules[1]!.name).toBe("appended");
+    expect(rules[1]!.action).toEqual({ type: "reject", reason: "no" });
+  });
+
+  it("appends to empty file", () => {
+    writeFileSync(tmpFile, "");
+    appendRule(tmpFile, { action: { type: "verify", reason: "check" } });
+    const rules = loadRules(tmpFile);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]!.action).toEqual({ type: "verify", reason: "check" });
+  });
+
+  it("persists when expression", () => {
+    appendRule(tmpFile, { when: 'toolName == "edit"', action: { type: "accept" } });
+    const rules = loadRules(tmpFile);
+    expect(rules[0]!.when).toBe('toolName == "edit"');
   });
 });
