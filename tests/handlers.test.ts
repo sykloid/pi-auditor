@@ -1,4 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@mariozechner/pi-coding-agent", () => ({
+  DynamicBorder: class {},
+}));
+vi.mock("@mariozechner/pi-tui", () => ({
+  Container: class { addChild() {} },
+  Text: class {},
+  matchesKey: () => false,
+  Key: {},
+  truncateToWidth: (s: string) => s,
+}));
+
 import { defaultHandler } from "../handlers/default.js";
 import { pathHandler } from "../handlers/path.js";
 import type { ToolCall } from "../types.js";
