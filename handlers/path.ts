@@ -17,7 +17,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Build the list of path options from most specific to broadest. */
-function buildPathOptions(relPath: string): PathVerifyOption[] {
+export function buildPathOptions(relPath: string): PathVerifyOption[] {
   const options: PathVerifyOption[] = [];
 
   // 1. This exact file
@@ -47,7 +47,7 @@ const SCOPE_OPTIONS: ScopeOption[] = [
 ];
 
 /** Convert a PathVerifyResult into a VerifyResult with an optional rule. */
-function toVerifyResult(result: PathVerifyResult, toolName: string): VerifyResult {
+export function toVerifyResult(result: PathVerifyResult, toolName: string): VerifyResult {
   if (result.type === "accept") return { accepted: true };
   if (result.type === "reject") return { accepted: false };
 
