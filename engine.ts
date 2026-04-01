@@ -1,4 +1,7 @@
 import { evaluate } from "@marcbachmann/cel-js";
+import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
+import { DynamicBorder } from "@mariozechner/pi-coding-agent";
+import { Container, Text } from "@mariozechner/pi-tui";
 import type { ToolCall, AuditAction, Handler, Rule, RuleScope } from "./types.js";
 import { defaultHandler } from "./handlers/default.js";
 
@@ -51,6 +54,72 @@ export class Auditor {
   /** Clear rules for a scope. */
   clearRules(scope: RuleScope): void {
     this.rules[scope] = [];
+  }
+
+  /** Get rule counts per scope. */
+  getRuleCounts(): Record<RuleScope, number> {
+    return {
+      session: this.rules.session.length,
+      project: this.rules.project.length,
+      global: this.rules.global.length,
+    };
+  }
+
+  /** Get all rules, grouped by scope. */
+  getRules(): Record<RuleScope, Rule[]> {
+    return this.rules;
+  }
+
+  /** Show all loaded rules in a styled custom UI. */
+  async showRuleList(ctx: ExtensionCommandContext): Promise<void> {
+    const hasRules = Object.values(this.rules).some((r) => r.length > 0);
+    if (!hasRules) {
+      ctx.ui.notify("No rules loaded.", "info");
+      return;
+    }
+
+    const rules = this.rules;
+    await ctx.ui.custom<void>((tui, theme, _kb, done) => {
+      const container = new Container();
+      container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+      container.addChild(new Text(theme.fg("text", theme.bold(" Auditor Rules")), 0, 0));
+      container.addChild(new Text("", 0, 0));
+
+      for (const scope of ["session", "project", "global"] as const) {
+        const scopeRules = rules[scope];
+        if (scopeRules.length === 0) continue;
+        container.addChild(new Text(theme.fg("accent", `  ${scope}:`), 0, 0));
+        for (const r of scopeRules) {
+          const name = theme.fg("dim", r.name ?? "(unnamed)");
+          const when = theme.fg("text", r.when ?? "(always)");
+          const action =
+            r.action.type === "accept"
+              ? theme.fg("success", r.action.type)
+              : r.action.type === "reject"
+                ? theme.fg("error", r.action.type)
+                : theme.fg("warning", r.action.type);
+          container.addChild(new Text(`    ${name} ${when} \u2192 ${action}`, 0, 0));
+        }
+      }
+
+      container.addChild(new Text("", 0, 0));
+      container.addChild(new Text(theme.fg("dim", "  press any key to close"), 0, 0));
+      const bottomBorder = new DynamicBorder((s: string) => theme.fg("accent", s));
+
+      return {
+        render(width: number): string[] {
+          return [...container.render(width), ...bottomBorder.render(width)];
+        },
+        invalidate() {
+          container.invalidate();
+          bottomBorder.invalidate();
+        },
+        handleInput() {
+          done(undefined);
+          tui.requestRender();
+        },
+      };
+    });
   }
 
   /** Get the handler for a tool (or the default). */

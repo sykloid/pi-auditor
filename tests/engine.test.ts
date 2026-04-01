@@ -1,4 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@mariozechner/pi-coding-agent", () => ({
+  DynamicBorder: class {},
+}));
+vi.mock("@mariozechner/pi-tui", () => ({
+  Container: class {
+    addChild() {}
+  },
+  Text: class {},
+}));
+
 import { Auditor } from "../engine.js";
 import type { ToolCall } from "../types.js";
 

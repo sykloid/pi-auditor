@@ -93,6 +93,48 @@ export default function (pi: ExtensionAPI) {
     auditor.clearRules("session");
   });
 
+  function reloadRules(ctx: ExtensionContext): void {
+    rulePaths.project = join(ctx.cwd, ".pi", "auditor", "rules.yml");
+    auditor.setRules("global", loadRules(rulePaths.global));
+    auditor.setRules("project", loadRules(rulePaths.project));
+    auditor.clearRules("session");
+  }
+
+  pi.registerCommand("auditor", {
+    description: "Manage auditor rules (reload, status)",
+    getArgumentCompletions: (prefix) => {
+      const cmds = [
+        { value: "reload", label: "reload — reload rules from disk" },
+        { value: "status", label: "status — show loaded rule counts" },
+        { value: "list", label: "list — list all loaded rules" },
+      ];
+      const filtered = cmds.filter((c) => c.value.startsWith(prefix));
+      return filtered.length > 0 ? filtered : null;
+    },
+    handler: async (args, ctx) => {
+      const sub = args?.trim().split(/\s+/)[0];
+      switch (sub) {
+        case "reload":
+          reloadRules(ctx);
+          ctx.ui.notify("Auditor rules reloaded.", "info");
+          break;
+        case "status": {
+          const counts = auditor.getRuleCounts();
+          ctx.ui.notify(
+            `Rules — session: ${counts.session}, project: ${counts.project}, global: ${counts.global}`,
+            "info",
+          );
+          break;
+        }
+        case "list":
+          await auditor.showRuleList(ctx);
+          break;
+        default:
+          ctx.ui.notify("Usage: /auditor <reload|status|list>", "warning");
+      }
+    },
+  });
+
   pi.on("tool_call", async (event, ctx) => {
     const toolCall: ToolCall = {
       toolName: event.toolName,
