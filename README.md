@@ -186,6 +186,16 @@ text input appears on the same line:
 
 Backspace on an empty input exits elaboration.
 
+## Commands
+
+The extension registers `/auditor` with the following subcommands:
+
+| Command            | Description                          |
+|--------------------|--------------------------------------|
+| `/auditor reload`  | Reload rules from disk               |
+| `/auditor status`  | Show loaded rule counts per scope    |
+| `/auditor list`    | Show all loaded rules in a styled UI |
+
 ## Development
 
 ```bash
@@ -194,6 +204,12 @@ npm test
 
 # Type check
 npx tsc --noEmit
+
+# Format
+npm run format
+
+# Lint
+npm run lint
 
 # Tests with coverage
 npm run test:coverage
