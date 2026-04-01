@@ -57,6 +57,8 @@ export interface VerifyResult {
     rule: Rule;
     scope: RuleScope;
   };
+  /** Optional elaboration message from the user. */
+  message?: string;
 }
 
 /**

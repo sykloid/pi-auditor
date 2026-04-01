@@ -26,9 +26,7 @@ rules:
 rules:
   - action: accept
 `);
-    expect(rules).toEqual([
-      { name: undefined, when: undefined, action: { type: "accept" } },
-    ]);
+    expect(rules).toEqual([{ name: undefined, when: undefined, action: { type: "accept" } }]);
   });
 
   it("parses verify action", () => {
@@ -83,10 +81,12 @@ rules:
   });
 
   it("throws on unknown action", () => {
-    expect(() => parseRules(`
+    expect(() =>
+      parseRules(`
 rules:
   - action: explode
-`)).toThrow("Unknown action: explode");
+`),
+    ).toThrow("Unknown action: explode");
   });
 
   it("all fields are optional", () => {
@@ -113,12 +113,15 @@ describe("loadRules", () => {
   });
 
   it("loads rules from a YAML file", () => {
-    writeFileSync(tmpFile, `
+    writeFileSync(
+      tmpFile,
+      `
 rules:
   - name: test-rule
     when: 'toolName == "bash"'
     action: accept
-`);
+`,
+    );
     const rules = loadRules(tmpFile);
     expect(rules).toHaveLength(1);
     expect(rules[0]!.name).toBe("test-rule");
@@ -149,7 +152,11 @@ describe("appendRule", () => {
 
   it("creates file and directories if they don't exist", () => {
     const nested = join(tmpDir, "a", "b", "rules.yml");
-    appendRule(nested, { name: "new-rule", when: 'toolName == "bash"', action: { type: "accept" } });
+    appendRule(nested, {
+      name: "new-rule",
+      when: 'toolName == "bash"',
+      action: { type: "accept" },
+    });
     const rules = loadRules(nested);
     expect(rules).toHaveLength(1);
     expect(rules[0]!.name).toBe("new-rule");

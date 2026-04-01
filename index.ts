@@ -4,7 +4,11 @@
  * Intercepts tool calls for rule-based evaluation and policy enforcement.
  */
 
-import type { ExtensionAPI, ExtensionContext, ToolCallEventResult } from "@mariozechner/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ToolCallEventResult,
+} from "@mariozechner/pi-coding-agent";
 import type { ToolCall, AuditAction, Rule, RuleScope } from "./types.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -12,7 +16,8 @@ import { Auditor } from "./engine.js";
 import { loadRules, appendRule } from "./config.js";
 import { pathHandler } from "./handlers/path.js";
 
-const REJECTION_MESSAGE = "User explicitly rejected this tool call. Do not attempt the same operation via a different tool or workaround. Report the intended change to the user instead.";
+const REJECTION_MESSAGE =
+  "User explicitly rejected this tool call. Do not attempt the same operation via a different tool or workaround. Report the intended change to the user instead.";
 
 export default function (pi: ExtensionAPI) {
   const auditor = new Auditor();
@@ -65,7 +70,11 @@ export default function (pi: ExtensionAPI) {
         }
 
         if (!result.accepted) {
-          return { block: true, reason: REJECTION_MESSAGE };
+          const reason = result.message ?? REJECTION_MESSAGE;
+          return { block: true, reason };
+        }
+        if (result.message) {
+          pi.sendUserMessage(result.message, { deliverAs: "steer" });
         }
         return undefined;
       }

@@ -6,9 +6,7 @@ function summarize(toolCall: ToolCall): string {
     const str = typeof value === "string" ? value : JSON.stringify(value);
     return `  ${key}: ${str}`;
   });
-  return parts.length > 0
-    ? `${toolCall.toolName}:\n${parts.join("\n")}`
-    : toolCall.toolName;
+  return parts.length > 0 ? `${toolCall.toolName}:\n${parts.join("\n")}` : toolCall.toolName;
 }
 
 /**

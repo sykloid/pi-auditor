@@ -171,6 +171,21 @@ tab, cycle with ↑↓):
 Rules created at project or global scope are persisted to their respective
 YAML files automatically.
 
+#### Elaboration
+
+On Accept or Reject, pressing TAB enters inline elaboration mode — a
+text input appears on the same line:
+
+```
+  › Accept, use the helper function instead
+```
+
+- On **accept**, the elaboration is sent as a steering message to the
+  agent, delivered before the next LLM call.
+- On **reject**, the elaboration replaces the default rejection reason.
+
+Backspace on an empty input exits elaboration.
+
 ## Development
 
 ```bash

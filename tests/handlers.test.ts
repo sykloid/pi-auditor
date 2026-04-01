@@ -4,8 +4,24 @@ vi.mock("@mariozechner/pi-coding-agent", () => ({
   DynamicBorder: class {},
 }));
 vi.mock("@mariozechner/pi-tui", () => ({
-  Container: class { addChild() {} },
+  Container: class {
+    addChild() {}
+  },
   Text: class {},
+  Input: class {
+    focused = false;
+    onSubmit?: () => void;
+    onEscape?: () => void;
+    getValue() {
+      return "";
+    }
+    setValue() {}
+    handleInput() {}
+    invalidate() {}
+    render() {
+      return [""];
+    }
+  },
   matchesKey: () => false,
   Key: {},
   truncateToWidth: (s: string) => s,
@@ -63,7 +79,7 @@ describe("pathHandler", () => {
 describe("buildPathOptions", () => {
   it("returns file, dir, project, and all for nested path", () => {
     const opts = buildPathOptions("src/handlers/path.ts");
-    expect(opts.map(o => o.kind)).toEqual(["file", "dir", "project", "all"]);
+    expect(opts.map((o) => o.kind)).toEqual(["file", "dir", "project", "all"]);
     expect(opts[0]!.label).toBe("src/handlers/path.ts");
     expect(opts[0]!.value).toBe("file:src/handlers/path.ts");
     expect(opts[1]!.label).toBe("src/handlers/");
@@ -74,29 +90,43 @@ describe("buildPathOptions", () => {
 
   it("omits dir and project for file directly in cwd", () => {
     const opts = buildPathOptions("foo.ts");
-    expect(opts.map(o => o.kind)).toEqual(["file", "all"]);
+    expect(opts.map((o) => o.kind)).toEqual(["file", "all"]);
   });
 
   it("omits project for file outside cwd", () => {
     const opts = buildPathOptions("../etc/hosts");
-    expect(opts.find(o => o.kind === "project")).toBeUndefined();
+    expect(opts.find((o) => o.kind === "project")).toBeUndefined();
   });
 
   it("includes dir and project for file one level deep", () => {
     const opts = buildPathOptions("src/foo.ts");
-    expect(opts.map(o => o.kind)).toEqual(["file", "dir", "project", "all"]);
+    expect(opts.map((o) => o.kind)).toEqual(["file", "dir", "project", "all"]);
   });
 });
 
 describe("toVerifyResult", () => {
   it("returns accepted for accept type", () => {
     const result = toVerifyResult({ type: "accept" }, "edit");
-    expect(result).toEqual({ accepted: true });
+    expect(result.accepted).toBe(true);
+    expect(result.message).toBeUndefined();
   });
 
   it("returns rejected for reject type", () => {
     const result = toVerifyResult({ type: "reject" }, "edit");
-    expect(result).toEqual({ accepted: false });
+    expect(result.accepted).toBe(false);
+    expect(result.message).toBeUndefined();
+  });
+
+  it("passes accept message through", () => {
+    const result = toVerifyResult({ type: "accept", message: "be careful" }, "edit");
+    expect(result.accepted).toBe(true);
+    expect(result.message).toBe("be careful");
+  });
+
+  it("passes reject message through", () => {
+    const result = toVerifyResult({ type: "reject", message: "wrong file" }, "edit");
+    expect(result.accepted).toBe(false);
+    expect(result.message).toBe("wrong file");
   });
 
   it("generates file rule with CEL expression", () => {
@@ -107,7 +137,9 @@ describe("toVerifyResult", () => {
     const result = toVerifyResult(input, "edit");
     expect(result.accepted).toBe(true);
     expect(result.newRule!.scope).toBe("session");
-    expect(result.newRule!.rule.when).toBe('toolName == "edit" && attributes.relativePath == "src/foo.ts"');
+    expect(result.newRule!.rule.when).toBe(
+      'toolName == "edit" && attributes.relativePath == "src/foo.ts"',
+    );
     expect(result.newRule!.rule.action).toEqual({ type: "accept" });
   });
 
@@ -117,7 +149,9 @@ describe("toVerifyResult", () => {
       rule: { action: "accept", path: "dir:src/handlers", scope: "project" },
     };
     const result = toVerifyResult(input, "write");
-    expect(result.newRule!.rule.when).toBe('toolName == "write" && attributes.relativePath.startsWith("src/handlers/")');
+    expect(result.newRule!.rule.when).toBe(
+      'toolName == "write" && attributes.relativePath.startsWith("src/handlers/")',
+    );
     expect(result.newRule!.scope).toBe("project");
   });
 
@@ -128,8 +162,13 @@ describe("toVerifyResult", () => {
     };
     const result = toVerifyResult(input, "read");
     expect(result.accepted).toBe(false);
-    expect(result.newRule!.rule.when).toBe('toolName == "read" && !attributes.relativePath.startsWith("..")');
-    expect(result.newRule!.rule.action).toEqual({ type: "reject", reason: "Rejected by user rule." });
+    expect(result.newRule!.rule.when).toBe(
+      'toolName == "read" && !attributes.relativePath.startsWith("..")',
+    );
+    expect(result.newRule!.rule.action).toEqual({
+      type: "reject",
+      reason: "Rejected by user rule.",
+    });
     expect(result.newRule!.scope).toBe("global");
   });
 

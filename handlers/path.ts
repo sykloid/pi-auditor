@@ -48,8 +48,8 @@ const SCOPE_OPTIONS: ScopeOption[] = [
 
 /** Convert a PathVerifyResult into a VerifyResult with an optional rule. */
 export function toVerifyResult(result: PathVerifyResult, toolName: string): VerifyResult {
-  if (result.type === "accept") return { accepted: true };
-  if (result.type === "reject") return { accepted: false };
+  if (result.type === "accept") return { accepted: true, message: result.message };
+  if (result.type === "reject") return { accepted: false, message: result.message };
 
   assert(result.type === "rule", `unexpected verify result type: ${result.type}`);
   const r = result.rule!;
@@ -81,11 +81,14 @@ export function toVerifyResult(result: PathVerifyResult, toolName: string): Veri
 
   return {
     accepted,
+    message: result.message,
     newRule: {
       rule: {
         name: `user-rule-${toolName}-${Date.now()}`,
         when,
-        action: accepted ? { type: "accept" } : { type: "reject", reason: "Rejected by user rule." },
+        action: accepted
+          ? { type: "accept" }
+          : { type: "reject", reason: "Rejected by user rule." },
       },
       scope,
     },
@@ -118,50 +121,48 @@ export function pathHandler(toolName: string): Handler {
       const relPath = toolCall.attributes.relativePath as string;
       const pathOptions = buildPathOptions(relPath);
 
-      const result = await ctx.ui.custom<PathVerifyResult>(
-        (tui, theme, _kb, done) => {
-          const controlTheme: PathVerifyControlTheme = {
-            selected: (t) => theme.fg("accent", t),
-            unselected: (t) => theme.fg("muted", t),
-            fieldActive: (t) => theme.fg("accent", theme.bold(t)),
-            fieldInactive: (t) => theme.fg("dim", t),
-            hint: (t) => theme.fg("dim", t),
-          };
+      const result = await ctx.ui.custom<PathVerifyResult>((tui, theme, _kb, done) => {
+        const controlTheme: PathVerifyControlTheme = {
+          selected: (t) => theme.fg("accent", t),
+          unselected: (t) => theme.fg("muted", t),
+          fieldActive: (t) => theme.fg("accent", theme.bold(t)),
+          fieldInactive: (t) => theme.fg("dim", t),
+          hint: (t) => theme.fg("dim", t),
+        };
 
-          const control = new PathVerifyControl(
-            { toolName, pathOptions, scopeOptions: SCOPE_OPTIONS },
-            controlTheme,
-          );
+        const control = new PathVerifyControl(
+          { toolName, pathOptions, scopeOptions: SCOPE_OPTIONS },
+          controlTheme,
+        );
 
-          control.onSubmit = () => done(control.getValue());
-          control.onCancel = () => done({ type: "reject" });
+        control.onSubmit = () => done(control.getValue());
+        control.onCancel = () => done({ type: "reject" });
 
-          const container = new Container();
-          container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-          container.addChild(new Text(theme.fg("text", ` Verify: ${toolName} ${relPath}`), 0, 0));
-          container.addChild(new Text("", 0, 0));
+        const container = new Container();
+        container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+        container.addChild(new Text(theme.fg("text", ` Verify: ${toolName} ${relPath}`), 0, 0));
+        container.addChild(new Text("", 0, 0));
 
-          const bottomBorder = new DynamicBorder((s: string) => theme.fg("accent", s));
+        const bottomBorder = new DynamicBorder((s: string) => theme.fg("accent", s));
 
-          return {
-            render(width: number): string[] {
-              const top = container.render(width);
-              const body = control.render(width);
-              const bottom = bottomBorder.render(width);
-              return [...top, ...body, ...bottom];
-            },
-            invalidate() {
-              container.invalidate();
-              control.invalidate();
-              bottomBorder.invalidate();
-            },
-            handleInput(data: string) {
-              control.handleInput(data);
-              tui.requestRender();
-            },
-          };
-        },
-      );
+        return {
+          render(width: number): string[] {
+            const top = container.render(width);
+            const body = control.render(width);
+            const bottom = bottomBorder.render(width);
+            return [...top, ...body, ...bottom];
+          },
+          invalidate() {
+            container.invalidate();
+            control.invalidate();
+            bottomBorder.invalidate();
+          },
+          handleInput(data: string) {
+            control.handleInput(data);
+            tui.requestRender();
+          },
+        };
+      });
 
       return toVerifyResult(result, toolName);
     },

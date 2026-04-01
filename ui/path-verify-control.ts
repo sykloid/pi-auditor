@@ -1,4 +1,4 @@
-import { type Component, matchesKey, Key, truncateToWidth } from "@mariozechner/pi-tui";
+import { type Component, matchesKey, Key, truncateToWidth, Input } from "@mariozechner/pi-tui";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,6 +42,8 @@ export interface PathVerifyResult {
     path: string;
     scope: string;
   };
+  /** Optional elaboration message from the user. */
+  message?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,7 +113,7 @@ function composeSentence(
 // Control
 // ---------------------------------------------------------------------------
 
-type Mode = "select" | "rule-edit";
+type Mode = "select" | "rule-edit" | "elaborate";
 
 /**
  * Verification control for path-based tool calls.
@@ -136,10 +138,13 @@ export class PathVerifyControl implements Component {
   private mode: Mode = "select";
 
   // Rule fields
-  private ruleActionIndex = 0;  // 0=accept, 1=reject
+  private ruleActionIndex = 0; // 0=accept, 1=reject
   private rulePathIndex = 0;
   private ruleScopeIndex = 0;
-  private ruleFieldIndex = 0;  // 0=action, 1=path, 2=scope
+  private ruleFieldIndex = 0; // 0=action, 1=path, 2=scope
+
+  // Elaboration
+  private readonly input: Input;
 
   private cachedWidth?: number;
   private cachedLines?: string[];
@@ -152,14 +157,23 @@ export class PathVerifyControl implements Component {
     this.pathOptions = options.pathOptions;
     this.scopeOptions = options.scopeOptions;
     this.theme = theme;
+    this.input = new Input();
+    this.input.focused = true;
+    this.input.onSubmit = () => this.onSubmit?.();
+    this.input.onEscape = () => {
+      this.mode = "select";
+      this.input.setValue("");
+      this.invalidate();
+    };
   }
 
   getValue(): PathVerifyResult {
+    const message = this.input.getValue().trim() || undefined;
     switch (this.selectedIndex) {
       case 0:
-        return { type: "accept" };
+        return { type: "accept", message };
       case 1:
-        return { type: "reject" };
+        return { type: "reject", message };
       case 2:
         return {
           type: "rule",
@@ -174,7 +188,28 @@ export class PathVerifyControl implements Component {
     }
   }
 
+  /**
+   * Render an Input's text with cursor, stripping the hardcoded "> " prompt.
+   * We pass width + 2 to compensate for the 2-char prompt that Input prepends.
+   */
+  private renderInputInline(width: number): string {
+    const lines = this.input.render(width + 2);
+    const line = lines[0] ?? "";
+    return line.startsWith("> ") ? line.slice(2) : line;
+  }
+
   handleInput(data: string): void {
+    if (this.mode === "elaborate") {
+      // Backspace on empty exits elaboration
+      if (matchesKey(data, Key.backspace) && this.input.getValue() === "") {
+        this.mode = "select";
+        this.invalidate();
+        return;
+      }
+      this.input.handleInput(data);
+      this.invalidate();
+      return;
+    }
     if (this.mode === "rule-edit") {
       this.handleRuleEditInput(data);
     } else {
@@ -201,9 +236,13 @@ export class PathVerifyControl implements Component {
       this.onCancel?.();
       return;
     }
-    if (matchesKey(data, Key.tab) && this.selectedIndex === 2) {
-      this.mode = "rule-edit";
-      this.ruleFieldIndex = 0;
+    if (matchesKey(data, Key.tab)) {
+      if (this.selectedIndex === 2) {
+        this.mode = "rule-edit";
+        this.ruleFieldIndex = 0;
+      } else {
+        this.mode = "elaborate";
+      }
       this.invalidate();
       return;
     }
@@ -266,10 +305,10 @@ export class PathVerifyControl implements Component {
     const inSelect = this.mode === "select";
 
     // Option 0: Accept
-    lines.push(this.renderSimpleOption(0, "Accept", inSelect, width));
+    lines.push(this.renderOption(0, "Accept", inSelect, width));
 
     // Option 1: Reject
-    lines.push(this.renderSimpleOption(1, "Reject", inSelect, width));
+    lines.push(this.renderOption(1, "Reject", inSelect, width));
 
     // Option 2: Rule
     lines.push(this.renderRuleLine(inSelect, width));
@@ -282,17 +321,27 @@ export class PathVerifyControl implements Component {
     return lines;
   }
 
-  private renderSimpleOption(index: number, label: string, inSelect: boolean, width: number): string {
-    const isSelected = inSelect && this.selectedIndex === index;
-    const prefix = isSelected ? "› " : "  ";
+  private renderOption(index: number, label: string, inSelect: boolean, width: number): string {
+    const isSelected = this.selectedIndex === index;
+    const showInline = this.mode === "elaborate" && isSelected;
+    const prefix = inSelect && isSelected ? "› " : "  ";
     const style = isSelected ? this.theme.selected : this.theme.unselected;
-    return truncateToWidth(style(`  ${prefix}${label}`), width);
+
+    if (showInline) {
+      const pfx = `  ${prefix}${label}, `;
+      const inlineText = this.renderInputInline(width - pfx.length);
+      return truncateToWidth(style(pfx) + inlineText, width);
+    }
+
+    const elab = this.input.getValue().trim();
+    const suffix = isSelected && elab ? `, ${this.theme.hint(elab)}` : "";
+    return truncateToWidth(style(`  ${prefix}${label}`) + suffix, width);
   }
 
   private renderRuleLine(inSelect: boolean, width: number): string {
     const isSelected = this.selectedIndex === 2;
-    const prefix = (inSelect && isSelected) ? "› " : "  ";
-    const prefixStyle = (inSelect && isSelected) ? this.theme.selected : this.theme.unselected;
+    const prefix = inSelect && isSelected ? "› " : "  ";
+    const prefixStyle = inSelect && isSelected ? this.theme.selected : this.theme.unselected;
     const inEdit = this.mode === "rule-edit";
 
     const action = RULE_ACTIONS[this.ruleActionIndex]!;
@@ -324,12 +373,16 @@ export class PathVerifyControl implements Component {
 
   private renderHint(width: number): string {
     let parts: string[];
-    if (this.mode === "rule-edit") {
+    if (this.mode === "elaborate") {
+      parts = ["enter submit", "esc back"];
+    } else if (this.mode === "rule-edit") {
       parts = ["↑↓ cycle", "tab/shift-tab fields", "enter submit", "esc back"];
     } else {
       parts = ["↑↓ select", "enter submit"];
       if (this.selectedIndex === 2) {
         parts.push("tab edit rule");
+      } else {
+        parts.push("tab elaborate");
       }
     }
     return truncateToWidth(this.theme.hint("  " + parts.join(" • ")), width);

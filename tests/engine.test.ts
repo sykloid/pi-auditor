@@ -35,9 +35,7 @@ describe("Auditor.evaluate", () => {
   describe("CEL rule evaluation", () => {
     it("matches on toolName", () => {
       const auditor = new Auditor();
-      auditor.setRules("global", [
-        { when: 'toolName == "bash"', action: { type: "accept" } },
-      ]);
+      auditor.setRules("global", [{ when: 'toolName == "bash"', action: { type: "accept" } }]);
 
       expect(auditor.evaluate(makeToolCall({ toolName: "bash" })).type).toBe("accept");
       expect(auditor.evaluate(makeToolCall({ toolName: "read" })).type).toBe("verify");
@@ -62,11 +60,11 @@ describe("Auditor.evaluate", () => {
         enrich(toolCall: ToolCall) {
           toolCall.attributes.ext = (toolCall.input.path as string).split(".").pop();
         },
-        async verify() { return { accepted: false }; },
+        async verify() {
+          return { accepted: false };
+        },
       });
-      auditor.setRules("global", [
-        { when: 'attributes.ext == "ts"', action: { type: "accept" } },
-      ]);
+      auditor.setRules("global", [{ when: 'attributes.ext == "ts"', action: { type: "accept" } }]);
 
       const ts = makeToolCall({ toolName: "read", input: { path: "foo.ts" } });
       expect(auditor.evaluate(ts).type).toBe("accept");
@@ -91,7 +89,10 @@ describe("Auditor.evaluate", () => {
     it("supports matches() for regex", () => {
       const auditor = new Auditor();
       auditor.setRules("global", [
-        { when: 'input.command.matches("^(cat|head|tail|echo)\\\\b.*")', action: { type: "accept" } },
+        {
+          when: 'input.command.matches("^(cat|head|tail|echo)\\\\b.*")',
+          action: { type: "accept" },
+        },
       ]);
 
       const cat = makeToolCall({ input: { command: "cat foo.txt" } });
@@ -146,9 +147,7 @@ describe("Auditor.evaluate", () => {
 
     it("rule without when clause always matches (catch-all)", () => {
       const auditor = new Auditor();
-      auditor.setRules("global", [
-        { action: { type: "accept" } },
-      ]);
+      auditor.setRules("global", [{ action: { type: "accept" } }]);
 
       expect(auditor.evaluate(makeToolCall({ toolName: "anything" })).type).toBe("accept");
     });
@@ -169,9 +168,7 @@ describe("Auditor.evaluate", () => {
       auditor.setRules("project", [
         { when: 'toolName == "bash"', action: { type: "reject", reason: "project" } },
       ]);
-      auditor.setRules("session", [
-        { when: 'toolName == "bash"', action: { type: "accept" } },
-      ]);
+      auditor.setRules("session", [{ when: 'toolName == "bash"', action: { type: "accept" } }]);
 
       expect(auditor.evaluate(makeToolCall({ toolName: "bash" })).type).toBe("accept");
     });
@@ -181,18 +178,14 @@ describe("Auditor.evaluate", () => {
       auditor.setRules("global", [
         { when: 'toolName == "bash"', action: { type: "reject", reason: "global" } },
       ]);
-      auditor.setRules("project", [
-        { when: 'toolName == "bash"', action: { type: "accept" } },
-      ]);
+      auditor.setRules("project", [{ when: 'toolName == "bash"', action: { type: "accept" } }]);
 
       expect(auditor.evaluate(makeToolCall({ toolName: "bash" })).type).toBe("accept");
     });
 
     it("falls through scopes when no match", () => {
       const auditor = new Auditor();
-      auditor.setRules("session", [
-        { when: 'toolName == "read"', action: { type: "accept" } },
-      ]);
+      auditor.setRules("session", [{ when: 'toolName == "read"', action: { type: "accept" } }]);
       auditor.setRules("global", [
         { when: 'toolName == "bash"', action: { type: "reject", reason: "global" } },
       ]);
@@ -205,9 +198,7 @@ describe("Auditor.evaluate", () => {
 
     it("clearRules removes rules for a scope", () => {
       const auditor = new Auditor();
-      auditor.setRules("session", [
-        { action: { type: "accept" } },
-      ]);
+      auditor.setRules("session", [{ action: { type: "accept" } }]);
       auditor.clearRules("session");
 
       expect(auditor.evaluate(makeToolCall()).type).toBe("verify");
@@ -215,9 +206,7 @@ describe("Auditor.evaluate", () => {
 
     it("addRule prepends to a scope", () => {
       const auditor = new Auditor();
-      auditor.setRules("session", [
-        { action: { type: "reject", reason: "original" } },
-      ]);
+      auditor.setRules("session", [{ action: { type: "reject", reason: "original" } }]);
       auditor.addRule("session", { action: { type: "accept" } });
 
       expect(auditor.evaluate(makeToolCall()).type).toBe("accept");
