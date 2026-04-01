@@ -35,7 +35,7 @@ pi -e git:github.com/sykloid/pi-auditor
 Rules are defined in YAML files at two locations:
 
 | Scope   | Path                              |
-|---------|-----------------------------------|
+| ------- | --------------------------------- |
 | Project | `<project>/.pi/auditor/rules.yml` |
 | Global  | `~/.pi/auditor/rules.yml`         |
 
@@ -59,18 +59,18 @@ rules:
 
 Rules are evaluated against the enriched tool call. Available fields:
 
-| Field          | Description                        |
-|----------------|------------------------------------|
-| `toolName`     | Tool name (`read`, `write`, etc.)  |
-| `toolCallId`   | Unique ID for this tool call       |
-| `cwd`          | Current working directory          |
-| `input.*`      | Raw tool input parameters          |
-| `attributes.*` | Handler-enriched attributes        |
+| Field          | Description                       |
+| -------------- | --------------------------------- |
+| `toolName`     | Tool name (`read`, `write`, etc.) |
+| `toolCallId`   | Unique ID for this tool call      |
+| `cwd`          | Current working directory         |
+| `input.*`      | Raw tool input parameters         |
+| `attributes.*` | Handler-enriched attributes       |
 
 For path-based tools (`read`, `write`, `edit`), handlers add:
 
 | Attribute                 | Description            |
-|---------------------------|------------------------|
+| ------------------------- | ---------------------- |
 | `attributes.absolutePath` | Fully resolved path    |
 | `attributes.relativePath` | Path relative to `cwd` |
 
@@ -162,11 +162,11 @@ three options:
 The rule option is a sentence with three editable fields (navigate with
 tab, cycle with ↑↓):
 
-| Field  | Options                                          |
-|--------|--------------------------------------------------|
-| Action | Accept, Reject                                   |
-| Path   | exact file, directory, this project, any file    |
-| Scope  | for this session, for this project, globally     |
+| Field  | Options                                       |
+| ------ | --------------------------------------------- |
+| Action | Accept, Reject                                |
+| Path   | exact file, directory, this project, any file |
+| Scope  | for this session, for this project, globally  |
 
 Rules created at project or global scope are persisted to their respective
 YAML files automatically.
@@ -190,11 +190,11 @@ Backspace on an empty input exits elaboration.
 
 The extension registers `/auditor` with the following subcommands:
 
-| Command            | Description                          |
-|--------------------|--------------------------------------|
-| `/auditor reload`  | Reload rules from disk               |
-| `/auditor status`  | Show loaded rule counts per scope    |
-| `/auditor list`    | Show all loaded rules in a styled UI |
+| Command           | Description                          |
+| ----------------- | ------------------------------------ |
+| `/auditor reload` | Reload rules from disk               |
+| `/auditor status` | Show loaded rule counts per scope    |
+| `/auditor list`   | Show all loaded rules in a styled UI |
 
 ## Development
 
